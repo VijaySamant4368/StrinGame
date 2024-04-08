@@ -4,13 +4,14 @@ import time
 
 from config import *
 
-from menu import textBox
+from menu import typeHere, display_bars
 from map import generate_random_matrix, fill_screen, start_pos
 
 from sound import victory_sound, thornSound
 
-from menuScreen import mainMenu, display_bars
+from menuScreen import mainMenu
 from credits import creditsScreen
+from score import update_scores, highscoresScreen, load_scores, highscoresScreen, checkHighScore
 
 import pygame
 import sys
@@ -95,18 +96,21 @@ def checkRight(map, pos_x, pos_y):
         elif temp=="G":
             return "GOAL"
 
-def nextLevel(level, score, life):
+def nextLevel(level, life, score):
     victory_sound()
     global FONT_SIZE
     level+=1
     print("Current Level",level)
-    print(FONT_SIZE)
     temp=level//5*5
+    print("life:",life)
     FONT_SIZE-=1
     new_level=generate_random_matrix(temp, temp, (level*level)//10)
     x,y =start_pos(new_level)# Store the initial time
     initial_time = pygame.time.get_ticks()
-    return x,y,new_level, level, initial_time, score*life
+    print(score, life, level-1)
+    score=score+(level-1)*life+10
+    print(score)
+    return x,y,new_level, level, initial_time, score
 
 def handle_movement(window, string, matrix, x, y):
     for char in string:
@@ -170,7 +174,11 @@ def play(screen):
             elif event.type == pygame.KEYDOWN:                #Key pressed *AND RELEASED*
                 # handleMovement(matrix, event.key)
                 pass
+
         if typed:
+            n=len(string)
+            score-=n
+            display_str=string
             for ch in string :
                 if ch=="W":
                     up=checkUp(matrix, x,y)
@@ -233,16 +241,16 @@ def play(screen):
                         break
                 
                 fill_screen(screen, matrix, (x,y), FONT_SIZE)
-                display_bars(screen, level, score, life)      
+                display_str=display_str[1:]
+                display_bars(screen, level, score, life, 1000*level, elapsed_time, display_str)      
                 pygame.display.flip()
-                time.sleep(0.3)
+                time.sleep(0.1)
             string=""
-    #string=enterString()
 
         keys = pygame.key.get_pressed()
 
         if keys[pygame.K_SPACE]:
-            x,y,matrix,level,initial_time=nextLevel(level)
+            x,y,matrix,level,initial_time,score=nextLevel(level, life, score)
             visible=True
             typed=False
             time.sleep(0.3)
@@ -251,13 +259,12 @@ def play(screen):
             # Calculate the elapsed time
         current_time = pygame.time.get_ticks()
         elapsed_time = current_time - initial_time
-        if elapsed_time>1000:
+        if elapsed_time>1000*level:
             visible=False
         
         if not visible and not typed:
-            while string=="" or string[-1]!="\n":
-                string=textBox(screen, (WIDTH*9)//10, HEIGHT//4, string, "ENTER YOUR STRING", limit=48)
-                pygame.display.flip()
+            string=typeHere(screen, "Enter your WASD string to move",'big',view_all=False)
+            pygame.display.flip()
             typed=True
             visible=True
             # string=""
@@ -265,23 +272,36 @@ def play(screen):
         else:
             fill_screen(screen, matrix, (x,y), FONT_SIZE)
 
-        clock.tick(FPS)
 
 
-        display_bars(screen, level, score, life)
+        display_bars(screen, level, score, life, 1000*level, elapsed_time, string)
         
         pygame.display.flip()
-        if level>=50:
-            return level, life
+        clock.tick(FPS)
+        if level>50 or life<=0:
+            return score
+    return score
 
 def homeScreen(screen):
     ans=(mainMenu(screen))
     if ans==1:
-        curLevel, curLife= play(screen)
-        addHighScore (curLevel, curLife)
+        score= play(screen)
+        if checkHighScore(score):
+            name=typeHere(screen, "Enter your String for HIGHSCORE")
+            print(name)
+            update_scores(screen, score, name)
+            if highscoresScreen(screen):
+                homeScreen(screen)
+        else:
+            homeScreen(screen)
+    elif ans==2:
+        if highscoresScreen(screen):
+            homeScreen(screen)
     elif ans==4:
         if creditsScreen(screen):
             homeScreen(screen)
+    elif ans==5:
+        pygame.quit()
 
 if __name__=="__main__":
     # pygame.init()

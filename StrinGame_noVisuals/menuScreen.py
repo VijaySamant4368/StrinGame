@@ -44,34 +44,13 @@ def mainMenu(window):
                     print("User selected option 4: Credits and stuffs")
                     # Perform action for Credits and stuffs option
                     return 4
-                elif event.key == pygame.K_0:
+                elif event.key == pygame.K_5:
                     print("User selected option 0: Exit")
-                    return 0
+                    return 5
                     pygame.quit()
                     running = False
 
-def level_bar(window, level):
-    level_text=str(level)
-    menuBox(window, 100, 100, "level", text=level_text, x=WIDTH+(REAL_WIDTH-WIDTH)//2, y=100)
-    level=int(level)
-    pygame.display.flip()
-    
-def score_bar(window, score):
-    score_text=str(score)
-    menuBox(window, 100, 100, "score", text=score_text, x=WIDTH+(REAL_WIDTH-WIDTH)//2, y=300)
-    score=int(score)
-    pygame.display.flip()
-    
-def life_bar(window, life):
-    life_text=str(life)
-    menuBox(window, 100, 100, "life", text=life_text, x=WIDTH+(REAL_WIDTH-WIDTH)//2, y=500)
-    life=int(life)
-    pygame.display.flip()
-    
-def display_bars(window, level, score, life):
-    life_bar(window, life)
-    score_bar(window, score)
-    level_bar(window, level)
+
     
 # Main loop
 def main():

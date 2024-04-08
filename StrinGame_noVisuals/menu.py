@@ -5,6 +5,99 @@ from config import *
 # Function to get user input in real-time
 # import sys
 
+
+def typeHere(screen,title="TITLE", size='normal',screen_width=REAL_WIDTH, screen_height=REAL_HEIGHT, view_all=True):
+    input_text = ""
+    font = pygame.font.Font(None, 32)  # Change the font size as needed
+    screen_width, screen_height = screen.get_size() 
+    if size=='normal':
+        text_area_width = 700
+        text_area_height = 70
+        limit=32
+    elif size=='big':
+        text_area_width = 700
+        text_area_height = 70*6
+        limit=32*16
+        
+    
+    text_area_x = (screen_width - text_area_width) // 2
+    text_area_y = (screen_height - text_area_height) // 2
+        
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    return input_text
+                elif event.key==pygame.K_DELETE:
+                    input_text=""
+                elif event.key == pygame.K_BACKSPACE:
+                    input_text = input_text[:-1]
+                if len(input_text)<limit:
+                    if view_all:
+                        if event.unicode.isalnum():
+                            input_text +=event.unicode  # Convert WASD to uppercase
+                        elif event.key == pygame.K_MINUS:
+                            if pygame.key.get_mods() & pygame.KMOD_SHIFT:  # Check for shift modifier
+                                input_text += "_"  # Add underscore if shift is pressed
+                    else:
+                        if event.key==pygame.K_w or event.key==pygame.K_a or event.key==pygame.K_s or event.key==pygame.K_d:
+                            input_text +=event.unicode.upper()  # Convert WASD to uppercase
+                            
+                # else:
+                #     input_text = input_text[:-1]
+
+        screen.fill((50, 50, 50))  # Fill the screen with grey color
+        pygame.draw.rect(screen, (255//2,255//2,255//2), (text_area_x - 10, text_area_y, text_area_width + 20, text_area_height+50))  # Draw grey rectangle around the white rectangle
+        pygame.draw.rect(screen, (255,255,255), (text_area_x, text_area_y+50, text_area_width, text_area_height-30))  # Draw white rectangle
+        
+        text_surface = font.render(title, True, (255, 255, 255))  # Render text with white color
+        
+        text_rect = text_surface.get_rect(center=(screen_width // 2, text_area_y+30))  # Align text to center
+        y = text_area_y + 70        
+        lines = input_text.split('\n')  # Split input_text by newline character
+        screen.blit(text_surface, text_rect)  # Blit text surface at the calculated position
+
+        
+        for i in range(16):
+            text_surface = font.render(input_text[i*32:(i+1)*32], True, (0,0,0))  # Render text with white color
+            text_rect = text_surface.get_rect(center=(screen_width // 2, y))  # Align text to center
+            screen.blit(text_surface, text_rect)  # Blit text surface at the calculated position
+            y += font.get_linesize()  # Increment y coordinate by line height
+
+        pygame.display.flip()
+        pygame.time.Clock().tick(FPS)  # Set desired FPS
+
+
+def level_bar(window, level):
+    level_text=str(level)
+    menuBox(window, 100, 100, "level", text=level_text, x=WIDTH+(REAL_WIDTH-WIDTH)//4, y=50)
+    
+def score_bar(window, score):
+    score_text=str(score)
+    menuBox(window, 100, 100, "score", text=score_text, x=WIDTH+(REAL_WIDTH-WIDTH)//4, y=250)
+    
+def life_bar(window, life):
+    life_text=str(life)
+    menuBox(window, 100, 100, "life", text=life_text, x=WIDTH+(REAL_WIDTH-WIDTH)//4, y=450)
+    
+def time_bar(window, total_time, elapsed_time):
+    life_text=str(int((total_time-elapsed_time)/1000))
+    menuBox(window, 100, 100, "time", text=life_text, x=WIDTH+(REAL_WIDTH-WIDTH)//4, y=650)
+    
+def string_bar(window, string):
+    string_text=string[:32]
+    menuBox(window, 750, 100, "String", text=string_text, x=(REAL_WIDTH-WIDTH), y=650)
+    
+def display_bars(window, level, score, life, total_time, elapsed_time, string):
+    life_bar(window, life)
+    score_bar(window, score)
+    level_bar(window, level)
+    time_bar(window, total_time, elapsed_time)
+    string_bar(window, string)
+
+
 def enterString(input_text, limit=16):
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -130,7 +223,7 @@ def textBox(window, width, height,text, title="title", color=GREY, text_size=32,
     text=enterDirection(text, limit)
     if text=="":
         input_text_surface=font.render("Start Typing", True, GREY)  # Text, antialiasing, color
-    else:    
+    else:
         input_text_surface=font.render(text, True, BLACK)  # Text, antialiasing, color
     input_text_rect =pygame.Rect(text_size, text_size * 1.7, width - text_size, text_size)
     menu_surface.blit(input_text_surface,input_text_rect)
@@ -139,6 +232,37 @@ def textBox(window, width, height,text, title="title", color=GREY, text_size=32,
     
     return text
 
+
+
+
+
+
+
+def Screen(window, text_to_show, aling='center'):
+    font = pygame.font.Font(None, 30)
+    text_surfaces = []
+    text_rects = []
+
+    for line in text_to_show:
+        if isinstance(line, tuple):  # Check if the line contains text and font size
+            text = line[0]
+            font_size = line[1]
+            font = pygame.font.Font(None, font_size)
+            text_surface = font.render(text, True, WHITE)
+        else:
+            text_surface = font.render(line, True, WHITE)
+
+        text_surfaces.append(text_surface)
+        if aling=='center':
+            text_rect = text_surface.get_rect(center=(REAL_WIDTH // 2, (len(text_surfaces) + 1) * 50))
+        elif aling=='left':
+            text_rect = text_surface.get_rect(center=(REAL_WIDTH // 10, (len(text_surfaces) + 1) * 50))
+        if aling=='right':
+            text_rect = text_surface.get_rect(center=(9*REAL_WIDTH // 10, (len(text_surfaces) + 1) * 50))
+        
+        text_rects.append(text_rect)
+        
+    return text_surfaces, text_rects
 
 
 if __name__=="__main__":
