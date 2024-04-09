@@ -69,84 +69,64 @@ def typeHere(screen,title="TITLE", size='normal',screen_width=REAL_WIDTH, screen
         pygame.display.flip()
         pygame.time.Clock().tick(FPS)  # Set desired FPS
 
+def outScreen(window, attempts):
+    text=["OOPS!!!"]
+    if attempts<=0:
+        text.append("You ran out of ateempts for this level")
+        text.append("Attempt levels with more focus")
+    else:
+        text.append("You ran out of lives")
+        text.append("Gotta save your lives, duh")
+    text.append("Press any key to close")
+    text_surfaces, text_rects=Screen(window, text)
+    running=True
+    while running:
+        window.fill(BLACK)
 
-def level_bar(window, level):
-    level_text=str(level)
-    menuBox(window, 100, 100, "level", text=level_text, x=WIDTH+(REAL_WIDTH-WIDTH)//4, y=50)
-    
-def score_bar(window, score):
-    score_text=str(score)
-    menuBox(window, 100, 100, "score", text=score_text, x=WIDTH+(REAL_WIDTH-WIDTH)//4, y=250)
-    
-def life_bar(window, life):
-    life_text=str(life)
-    menuBox(window, 100, 100, "life", text=life_text, x=WIDTH+(REAL_WIDTH-WIDTH)//4, y=450)
-    
-def time_bar(window, total_time, elapsed_time):
-    life_text=str(int((total_time-elapsed_time)/1000))
-    menuBox(window, 100, 100, "time", text=life_text, x=WIDTH+(REAL_WIDTH-WIDTH)//4, y=650)
-    
-def string_bar(window, string):
-    string_text=string[:32]
-    menuBox(window, 750, 100, "String", text=string_text, x=(REAL_WIDTH-WIDTH), y=650)
-    
-def display_bars(window, level, score, life, total_time, elapsed_time, string):
-    life_bar(window, life)
-    score_bar(window, score)
-    level_bar(window, level)
-    time_bar(window, total_time, elapsed_time)
-    string_bar(window, string)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                crossed = True
+                running = False
+            elif event.type == pygame.KEYDOWN:
+                running = False  # Return to main menu on any key press
+                crossed = False
 
+        for text_surface, text_rect in zip(text_surfaces, text_rects):
+            window.blit(text_surface, text_rect)
 
-def enterString(input_text, limit=16):
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-        if event.type == pygame.KEYDOWN:
-            # Check if the key pressed is alphanumeric
-            if event.unicode.isalnum() and len(input_text)<limit:
-                return input_text + event.unicode
-            elif event.key == pygame.K_BACKSPACE:
-                # If backspace is pressed, remove the last character from input_text
-                if len(input_text) > 0:
-                    return input_text[:-1]
-            elif event.key == pygame.K_DELETE:
-                return ""
-            elif event.key==pygame.K_RETURN:
-                return input_text+"\n"
-    return input_text
+        pygame.display.flip()
 
-def enterDirection(input_text, limit=16):
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-        if event.type == pygame.KEYDOWN:
-            if event.key in (pygame.K_w, pygame.K_a, pygame.K_s, pygame.K_d) and len(input_text) < limit:
-                return input_text + event.unicode.upper()
-            elif event.key == pygame.K_BACKSPACE:
-                if len(input_text) > 0:
-                    return input_text[:-1]
-            elif event.key == pygame.K_DELETE:
-                return ""
-            elif event.key == pygame.K_RETURN:
-                return input_text + "\n"
-    return input_text
+    if not crossed:
+        return 1
+    else:
+        return 0
+        
+def Screen(window, text_to_show, aling='center', height=50):
+    font = pygame.font.Font(None, 30)
+    text_surfaces = []
+    text_rects = []
 
-def enterNum(input_text):
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-        if event.type == pygame.KEYDOWN:
-            # Check if the key pressed is alphanumeric
-            if event.unicode.isdigit() and len(input_text)<2:
-                return input_text + event.unicode
-            elif event.key == pygame.K_BACKSPACE:
-                # If backspace is pressed, remove the last character from input_text
-                if len(input_text) > 0:
-                    return input_text[:-1]
-            elif event.key == pygame.K_DELETE:
-                return ""
-    return input_text
+    for line in text_to_show:
+        if isinstance(line, tuple):  # Check if the line contains text and font size
+            text = line[0]
+            font_size = line[1]
+            font = pygame.font.Font(None, font_size)
+            text_surface = font.render(text, True, WHITE)
+        else:
+            text_surface = font.render(line, True, WHITE)
+
+        text_surfaces.append(text_surface)
+        if aling=='center':
+            text_rect = text_surface.get_rect(center=(REAL_WIDTH // 2, (len(text_surfaces) + 1) * height))
+        elif aling=='left':
+            text_rect = text_surface.get_rect(center=(REAL_WIDTH // 10, (len(text_surfaces) + 1) * height))
+        if aling=='right':
+            text_rect = text_surface.get_rect(center=(9*REAL_WIDTH // 10, (len(text_surfaces) + 1) * height))
+        
+        text_rects.append(text_rect)
+        
+    return text_surfaces, text_rects
 
 def menuBox(window, width, height, title="title", color=GREY, text_size=32, x=None, y=None, top_region_color=WHITE, text=None):
     if x is None:
@@ -188,81 +168,42 @@ def menuBox(window, width, height, title="title", color=GREY, text_size=32, x=No
     
     return menu_surface
 
-
-def textBox(window, width, height,text, title="title", color=GREY, text_size=32, x=None, y=None, top_region_color=WHITE, limit=16):
-    # global text
-    if x is None:
-        x = (WIDTH // 2 - width // 2)
-    if y is None:
-        y = (HEIGHT // 2 - height // 2)
-    menu_surface = pygame.Surface((width, height), pygame.SRCALPHA)  # Create a surface with per-pixel alpha for transparency
-    menu_surface.fill((0, 0, 0, 0))  # Fill with transparent color
+def level_bar(window, level):
+    level_text=str(level)
+    menuBox(window, 150, 100, "level", text=level_text, x=WIDTH+(REAL_WIDTH-WIDTH)//4, y=50)
     
-    # Fill top region with a different color
-    top_region_rect = pygame.Rect(text_size // 2, 0 + 10, width - text_size, text_size)
-    pygame.draw.rect(menu_surface, top_region_color, top_region_rect)
+def score_bar(window, score):
+    score_text=str(score)
+    menuBox(window, 150, 100, "score", text=score_text, x=WIDTH+(REAL_WIDTH-WIDTH)//4, y=250)
     
-    # Draw round-edged rectangle
-    round_rect = pygame.Rect(0, 0, width, height)
-    pygame.draw.rect(menu_surface, color, round_rect, border_radius=10)  # Draw the round-edged rectangle
+def life_bar(window, life):
+    life_text=str(life)
+    menuBox(window, 150, 100, "life", text=life_text, x=WIDTH+(REAL_WIDTH-WIDTH)//4, y=450)
     
-    # Render text
-    font = pygame.font.Font(None, text_size)  # You can specify a font file or use None for default font
-    title_surface = font.render(title, True, (0, 0, 0))  # Text, antialiasing, color
-    text_rect = title_surface.get_rect(center=(width // 2, text_size // 2 + 10))  # Center the text
+def time_bar(window, total_time, elapsed_time):
+    life_text=str(int((total_time-elapsed_time)/1000))
+    menuBox(window, 150, 100, "time", text=life_text, x=WIDTH+(REAL_WIDTH-WIDTH)//4, y=650)
     
-    # Blit text onto menu surface
-    menu_surface.blit(title_surface, text_rect)
+def string_bar(window, string):
+    string_text=string[:32]
+    menuBox(window, 750, 100, "String", text=string_text, x=(REAL_WIDTH-WIDTH)//2, y=650)
     
-    # Draw textbox
-    textbox_rect = pygame.Rect(text_size // 2, text_size * 1.5, width - text_size, text_size)  # Define the rect for the textbox
-    # Blit text onto menu surface
-    menu_surface.blit(title_surface, textbox_rect)
-    pygame.draw.rect(menu_surface, WHITE, textbox_rect, border_radius=10)  # Draw the textbox
+def attempt_bar(window, attempts):
+    attempt_text=str(attempts)
+    menuBox(window, 150, 100, "attempts", text=attempt_text, x=(3*(REAL_WIDTH))//4, y=650)
     
-    text=enterDirection(text, limit)
-    if text=="":
-        input_text_surface=font.render("Start Typing", True, GREY)  # Text, antialiasing, color
-    else:
-        input_text_surface=font.render(text, True, BLACK)  # Text, antialiasing, color
-    input_text_rect =pygame.Rect(text_size, text_size * 1.7, width - text_size, text_size)
-    menu_surface.blit(input_text_surface,input_text_rect)
-
-    window.blit(menu_surface, (x, y))
-    
-    return text
+def display_bars(window, level, score, life, total_time, elapsed_time, string, attempts):
+    life_bar(window, life)
+    score_bar(window, score)
+    level_bar(window, level)
+    time_bar(window, total_time, elapsed_time)
+    string_bar(window, string)
+    attempt_bar(window, attempts)
 
 
 
 
 
-
-
-def Screen(window, text_to_show, aling='center'):
-    font = pygame.font.Font(None, 30)
-    text_surfaces = []
-    text_rects = []
-
-    for line in text_to_show:
-        if isinstance(line, tuple):  # Check if the line contains text and font size
-            text = line[0]
-            font_size = line[1]
-            font = pygame.font.Font(None, font_size)
-            text_surface = font.render(text, True, WHITE)
-        else:
-            text_surface = font.render(line, True, WHITE)
-
-        text_surfaces.append(text_surface)
-        if aling=='center':
-            text_rect = text_surface.get_rect(center=(REAL_WIDTH // 2, (len(text_surfaces) + 1) * 50))
-        elif aling=='left':
-            text_rect = text_surface.get_rect(center=(REAL_WIDTH // 10, (len(text_surfaces) + 1) * 50))
-        if aling=='right':
-            text_rect = text_surface.get_rect(center=(9*REAL_WIDTH // 10, (len(text_surfaces) + 1) * 50))
-        
-        text_rects.append(text_rect)
-        
-    return text_surfaces, text_rects
 
 
 if __name__=="__main__":

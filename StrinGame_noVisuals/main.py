@@ -4,14 +4,11 @@ import time
 
 from config import *
 
-from menu import typeHere, display_bars
 from map import generate_random_matrix, fill_screen, start_pos
-
 from sound import victory_sound, thornSound
-
-from menuScreen import mainMenu
-from credits import creditsScreen
-from score import update_scores, highscoresScreen, load_scores, highscoresScreen, checkHighScore
+from menu import typeHere, display_bars, outScreen
+from score import update_scores, checkHighScore, load_scores, delete_scores
+from screen import creditsScreen, mainMenu, highscoresScreen, howToPlay
 
 import pygame
 import sys
@@ -21,14 +18,10 @@ FPS=30
 clock=pygame.time.Clock()
 FONT_SIZE=50
 
-life=1
 def ouch( life,damage=1):
     life-=damage
     return life
-def null():
-    pass
-def victory():
-    pass
+    
 
 def removeThorn(matrix,x,y):
     if matrix[y][x]=="T":
@@ -96,7 +89,7 @@ def checkRight(map, pos_x, pos_y):
         elif temp=="G":
             return "GOAL"
 
-def nextLevel(level, life, score):
+def nextLevel(level, life, score, attempts):
     victory_sound()
     global FONT_SIZE
     level+=1
@@ -108,9 +101,9 @@ def nextLevel(level, life, score):
     x,y =start_pos(new_level)# Store the initial time
     initial_time = pygame.time.get_ticks()
     print(score, life, level-1)
-    score=score+(level-1)*life+10
-    print(score)
-    return x,y,new_level, level, initial_time, score
+    score=score+(level-1)*attempts+10
+    attempt=temp//4
+    return x,y,new_level, level, initial_time, score, attempt
 
 def handle_movement(window, string, matrix, x, y):
     for char in string:
@@ -144,27 +137,18 @@ pygame.display.set_caption("StrinGame")
 # Run the game loop
 def play(screen):
 
-
-    # Set up fonts
-    font = pygame.font.Font(None, FONT_SIZE)
-
-    # m=n=5
-    # matrix = generate_random_matrix(m, n)
-
     level=4
-    life=3
-    score=1
+    life=10
     string=""
-    moved=False
-    ready=False
-    x,y,matrix,level, initial_time, score=nextLevel(5, 1,1)
+    x,y,matrix,level, initial_time, score, attempt=nextLevel(5, 1,1, 1)
+    score=0
     visible=True
     typed=False
 
-    # Initial position of the hero
-    x,y=start_pos(matrix)
+    # # Initial position of the hero
+    # x,y=start_pos(matrix)
 
-    hero=pygame.rect.Rect(x,y,50,50)
+    # hero=pygame.rect.Rect(x,y,50,50)
     running = True
     while running:
         for event in pygame.event.get():
@@ -177,9 +161,11 @@ def play(screen):
 
         if typed:
             n=len(string)
-            score-=n
             display_str=string
+            attempt-=1
             for ch in string :
+                if event.type == pygame.QUIT:
+                    running = False
                 if ch=="W":
                     up=checkUp(matrix, x,y)
                     if up=="ROUTE":
@@ -190,7 +176,7 @@ def play(screen):
                         life=ouch(life)
                     elif up=="GOAL":
                         y-=1
-                        x,y,matrix,level,initial_time,score=nextLevel(level, life, score)
+                        x,y,matrix,level,initial_time,score, attempt=nextLevel(level, life, score, attempt)
                         visible=True
                         typed=False
                         break
@@ -205,7 +191,7 @@ def play(screen):
                         life=ouch(life)
                     elif down=="GOAL":
                         y+=1
-                        x,y,matrix,level,initial_time,score=nextLevel(level, life, score)
+                        x,y,matrix,level,initial_time,score, attempt=nextLevel(level, life, score, attempt)
                         visible=True
                         typed=False
                         break
@@ -220,7 +206,7 @@ def play(screen):
                         life=ouch(life)
                     elif left=="GOAL":
                         x-=1
-                        x,y,matrix,level,initial_time,score=nextLevel(level, life, score)
+                        x,y,matrix,level,initial_time,score, attempt=nextLevel(level, life, score, attempt)
                         visible=True
                         typed=False
                         break
@@ -235,22 +221,29 @@ def play(screen):
                         life=ouch(life)
                     elif right=="GOAL":
                         x+=1
-                        x,y,matrix,level,initial_time,score=nextLevel(level, life, score)
+                        x,y,matrix,level,initial_time,score, attempt=nextLevel(level, life, score, attempt)
                         visible=True
                         typed=False
                         break
                 
                 fill_screen(screen, matrix, (x,y), FONT_SIZE)
                 display_str=display_str[1:]
-                display_bars(screen, level, score, life, 1000*level, elapsed_time, display_str)      
+                score-=1
+                display_bars(screen, level-5, score, life, 1000*level, elapsed_time, display_str, attempt)
                 pygame.display.flip()
                 time.sleep(0.1)
+                if life<=0:
+                    break
             string=""
+            visible=True
+            typed=False
+            initial_time=pygame.time.get_ticks()
+            elapsed_time=0
 
         keys = pygame.key.get_pressed()
 
         if keys[pygame.K_SPACE]:
-            x,y,matrix,level,initial_time,score=nextLevel(level, life, score)
+            x,y,matrix,level,initial_time,score, attempt=nextLevel(level, life, score, attempt)
             visible=True
             typed=False
             time.sleep(0.3)
@@ -262,7 +255,7 @@ def play(screen):
         if elapsed_time>1000*level:
             visible=False
         
-        if not visible and not typed:
+        if not visible and not typed and attempt>0:
             string=typeHere(screen, "Enter your WASD string to move",'big',view_all=False)
             pygame.display.flip()
             typed=True
@@ -274,11 +267,14 @@ def play(screen):
 
 
 
-        display_bars(screen, level, score, life, 1000*level, elapsed_time, string)
+        display_bars(screen, level-5, score, life, 1000*level, elapsed_time, string, attempt)
         
         pygame.display.flip()
         clock.tick(FPS)
-        if level>50 or life<=0:
+        if level>50:
+            return score
+        elif life<=0 or attempt<=0:
+            outScreen(screen, attempt)
             return score
     return score
 
@@ -290,17 +286,24 @@ def homeScreen(screen):
             name=typeHere(screen, "Enter your String for HIGHSCORE")
             print(name)
             update_scores(screen, score, name)
-            if highscoresScreen(screen):
+            if highscoresScreen(screen, load_scores(filename='scores.json')):
                 homeScreen(screen)
         else:
             homeScreen(screen)
     elif ans==2:
-        if highscoresScreen(screen):
+        ans2=highscoresScreen(screen, load_scores(filename='scores.json'))
+        if ans2==-1:
+            delete_scores()
+            homeScreen(screen)
+        elif ans2:
             homeScreen(screen)
     elif ans==4:
         if creditsScreen(screen):
             homeScreen(screen)
     elif ans==5:
+        if howToPlay(screen):
+            homeScreen(screen)
+    elif ans==6:
         pygame.quit()
 
 if __name__=="__main__":

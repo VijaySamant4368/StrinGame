@@ -1,7 +1,7 @@
 import json
 import pygame
 from config import *
-from menu import textBox, Screen
+from screen import highscoresScreen
 
 def checkHighScore(score, filename="scores.json"):
     try:
@@ -54,57 +54,6 @@ def load_scores(filename='scores.json'):
         top_scores = []
     return top_scores
 
-def highscoresScreen(window):
-    highscores = load_scores(filename='scores.json')
-    center_text=[
-        ("High Scores:" ,100),
-        ("", 50)
-    ]
-    left_text=[
-        ("", 100),
-        ("", 50)
-    ]
-    right_text=[
-        ("", 100),
-        ("",50)
-    ]
-    for i in range(len(highscores)):
-        center_text.append( str(highscores[i]['name']) )
-        left_text.append(str(i+1)+".")
-        right_text.append(str(highscores[i]['score']))
-    center_text.append("Press any key to return to main menu")
-    running = True
-    center_text_surfaces, center_text_rects=Screen(window, center_text)
-    left_text_surfaces, left_text_rects=Screen(window, left_text, aling='left')
-    right_text_surfaces, right_text_rects=Screen(window, right_text, aling='right')
-    while running:
-        window.fill(BLACK)
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                crossed = True
-                running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key==pygame.K_0:
-                    delete_scores()
-                running = False  # Return to main menu on any key press
-                crossed = False
-
-        for text_surface, text_rect in zip(center_text_surfaces, center_text_rects):
-            window.blit(text_surface, text_rect)
-        for text_surface, text_rect in zip(left_text_surfaces, left_text_rects):
-            window.blit(text_surface, text_rect)
-        for text_surface, text_rect in zip(right_text_surfaces, right_text_rects):
-            window.blit(text_surface, text_rect)
-
-        pygame.display.flip()
-
-    if not crossed:
-        return 1
-    else:
-        return 0
-
 if __name__ == "__main__":
     pygame.init()
     window = pygame.display.set_mode((REAL_WIDTH, REAL_HEIGHT))
@@ -112,6 +61,6 @@ if __name__ == "__main__":
     # update_scores(window,20)
     pygame.display.set_caption("Main Window")
     
-    highscoresScreen(window)
+    highscoresScreen(window, load_scores(filename='scores.json'))
 
     pygame.quit()
